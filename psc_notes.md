@@ -75,5 +75,5 @@ ln -sf /usr/lib/libstdc++.so.6 /home/psc/anaconda3/envs/[NAME_OF_YOUR_ENVIRONMEN
 ## Inference
 
 ```shell
-python test.py --ckpt pretrained/epoch_160.pth --pc_path kitti/training/velodyne/000100.bin --img_path kitti/training/image_2/000100.png --calib_path kitti/training/calib/000100.txt  --gt_path kitti/training/label_2/000100.txt
+python inference.py
 ```
