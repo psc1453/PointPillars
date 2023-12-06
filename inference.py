@@ -13,11 +13,11 @@ from utils import read_points, keep_bbox_from_lidar_range, vis_pc
 
 
 def point_range_filter(pts, point_range=[0, -39.68, -3, 69.12, 39.68, 1]):
-    '''
+    """
     :param pts: (N x 4) numpy array
     :param point_range: [x1, y1, z1, x2, y2, z2]
     :return: Filtered point cloud
-    '''
+    """
     flag_x_low = pts[:, 0] > point_range[0]
     flag_y_low = pts[:, 1] > point_range[1]
     flag_z_low = pts[:, 2] > point_range[2]
