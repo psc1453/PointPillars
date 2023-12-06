@@ -90,10 +90,11 @@ def read_label(file_path):
 
 
 def write_label(result, file_path, suffix='.txt'):
-    '''
-    result: dict,
-    file_path: str
-    '''
+    """
+    :param suffix: default '.txt'
+    :param result: dict,
+    :param file_path: str
+    """
     assert os.path.splitext(file_path)[1] == suffix
     name, truncated, occluded, alpha, bbox, dimensions, location, rotation_y, score = \
         result['name'], result['truncated'], result['occluded'], result['alpha'], \

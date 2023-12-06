@@ -18,13 +18,13 @@ class PillarLayer(nn.Module):
 
     @torch.no_grad()
     def forward(self, batched_pts):
-        '''
-        batched_pts: list[tensor], len(batched_pts) = bs
-        return: 
-               pillars: (p1 + p2 + ... + pb, num_points, c), 
-               coors_batch: (p1 + p2 + ... + pb, 1 + 3), 
+        """
+        :param batched_pts: list[tensor], len(batched_pts) = bs
+        :return:
+               pillars: (p1 + p2 + ... + pb, num_points, c),
+               coors_batch: (p1 + p2 + ... + pb, 1 + 3),
                num_points_per_pillar: (p1 + p2 + ... + pb, ), (b: batch size)
-        '''
+        """
         pillars, coors, npoints_per_pillar = [], [], []
         for i, pts in enumerate(batched_pts):
             voxels_out, coors_out, num_points_per_voxel_out = self.voxel_layer(pts) 
@@ -58,12 +58,12 @@ class PillarEncoder(nn.Module):
         self.bn = nn.BatchNorm1d(out_channel, eps=1e-3, momentum=0.01)
 
     def forward(self, pillars, coors_batch, npoints_per_pillar):
-        '''
-        pillars: (p1 + p2 + ... + pb, num_points, c), c = 4
-        coors_batch: (p1 + p2 + ... + pb, 1 + 3)
-        npoints_per_pillar: (p1 + p2 + ... + pb, )
-        return:  (bs, out_channel, y_l, x_l)
-        '''
+        """
+        :param pillars: (p1 + p2 + ... + pb, num_points, c), c = 4
+        :param coors_batch: (p1 + p2 + ... + pb, 1 + 3)
+        :param npoints_per_pillar: (p1 + p2 + ... + pb, )
+        :return:  (bs, out_channel, y_l, x_l)
+        """
         device = pillars.device
         # 1. calculate offset to the points center (in each pillar)
         offset_pt_center = pillars[:, :, :3] - torch.sum(pillars[:, :, :3], dim=1, keepdim=True) / npoints_per_pillar[:, None, None] # (p1 + p2 + ... + pb, num_points, 3)
@@ -134,10 +134,10 @@ class Backbone(nn.Module):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
     def forward(self, x):
-        '''
-        x: (b, c, y_l, x_l). Default: (6, 64, 496, 432)
-        return: list[]. Default: [(6, 64, 248, 216), (6, 128, 124, 108), (6, 256, 62, 54)]
-        '''
+        """
+        :param x: (b, c, y_l, x_l). Default: (6, 64, 496, 432)
+        :return: list[]. Default: [(6, 64, 248, 216), (6, 128, 124, 108), (6, 256, 62, 54)]
+        """
         outs = []
         for i in range(len(self.multi_blocks)):
             x = self.multi_blocks[i](x)
@@ -170,10 +170,10 @@ class Neck(nn.Module):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
     def forward(self, x):
-        '''
-        x: [(bs, 64, 248, 216), (bs, 128, 124, 108), (bs, 256, 62, 54)]
-        return: (bs, 384, 248, 216)
-        '''
+        """
+        :param x: [(bs, 64, 248, 216), (bs, 128, 124, 108), (bs, 256, 62, 54)]
+        :return: (bs, 384, 248, 216)
+        """
         outs = []
         for i in range(len(self.decoder_blocks)):
             xi = self.decoder_blocks[i](x[i]) # (bs, 128, 248, 216)
@@ -204,13 +204,13 @@ class Head(nn.Module):
                 conv_layer_id += 1
 
     def forward(self, x):
-        '''
-        x: (bs, 384, 248, 216)
-        return: 
-              bbox_cls_pred: (bs, n_anchors*3, 248, 216) 
+        """
+        :param x: (bs, 384, 248, 216)
+        :return:
+              bbox_cls_pred: (bs, n_anchors*3, 248, 216)
               bbox_pred: (bs, n_anchors*7, 248, 216)
               bbox_dir_cls_pred: (bs, n_anchors*2, 248, 216)
-        '''
+        """
         bbox_cls_pred = self.conv_cls(x)
         bbox_pred = self.conv_reg(x)
         bbox_dir_cls_pred = self.conv_dir_cls(x)
@@ -266,16 +266,16 @@ class PointPillars(nn.Module):
         self.max_num = 50
 
     def get_predicted_bboxes_single(self, bbox_cls_pred, bbox_pred, bbox_dir_cls_pred, anchors):
-        '''
-        bbox_cls_pred: (n_anchors*3, 248, 216) 
-        bbox_pred: (n_anchors*7, 248, 216)
-        bbox_dir_cls_pred: (n_anchors*2, 248, 216)
-        anchors: (y_l, x_l, 3, 2, 7)
-        return: 
+        """
+        :param bbox_cls_pred: (n_anchors*3, 248, 216)
+        :param bbox_pred: (n_anchors*7, 248, 216)
+        :param bbox_dir_cls_pred: (n_anchors*2, 248, 216)
+        :param anchors: (y_l, x_l, 3, 2, 7)
+        :return:
             bboxes: (k, 7)
             labels: (k, )
-            scores: (k, ) 
-        '''
+            scores: (k, )
+        """
         # 0. pre-process 
         bbox_cls_pred = bbox_cls_pred.permute(1, 2, 0).reshape(-1, self.nclasses)
         bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 7)
@@ -352,16 +352,16 @@ class PointPillars(nn.Module):
 
 
     def get_predicted_bboxes(self, bbox_cls_pred, bbox_pred, bbox_dir_cls_pred, batched_anchors):
-        '''
-        bbox_cls_pred: (bs, n_anchors*3, 248, 216) 
-        bbox_pred: (bs, n_anchors*7, 248, 216)
-        bbox_dir_cls_pred: (bs, n_anchors*2, 248, 216)
-        batched_anchors: (bs, y_l, x_l, 3, 2, 7)
-        return: 
+        """
+        :param bbox_cls_pred: (bs, n_anchors*3, 248, 216)
+        :param bbox_pred: (bs, n_anchors*7, 248, 216)
+        :param bbox_dir_cls_pred: (bs, n_anchors*2, 248, 216)
+        :param batched_anchors: (bs, y_l, x_l, 3, 2, 7)
+        :return:
             bboxes: [(k1, 7), (k2, 7), ... ]
             labels: [(k1, ), (k2, ), ... ]
-            scores: [(k1, ), (k2, ), ... ] 
-        '''
+            scores: [(k1, ), (k2, ), ... ]
+        """
         results = []
         bs = bbox_cls_pred.size(0)
         for i in range(bs):
