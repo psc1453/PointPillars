@@ -97,7 +97,7 @@ def object_noise_core(pts, gt_bboxes_3d, bev_corners, trans_vec, rot_angle, rot_
     n_bbox, num_try = trans_vec.shape[:2]
     
     # succ_mask: (n_bbox, ), whether each bbox can be added noise successfully. -1 denotes failure.
-    succ_mask = -np.ones((n_bbox, ), dtype=np.int_)
+    succ_mask = -np.ones((n_bbox, ), dtype=np.int32)
     for i in range(n_bbox):
         for j in range(num_try):
             cur_bbox = bev_corners[i] - np.expand_dims(gt_bboxes_3d[i, :2], 0) # (4, 2) - (1, 2) -> (4, 2)
