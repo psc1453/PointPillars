@@ -63,6 +63,17 @@ class _Voxelization(torch.autograd.Function):
 
 
 class Voxelization(nn.Module):
+    """
+    This layer generates 3 outputs, they are:
+    - voxels_out: (N x M x 4) Tensor
+        - N is the number of voxels (only voxel containing points will be output)
+        - M is the number of points in the voxel (always equals to the maximum allowed value, 0-padding or cropping)
+        - 4 is the data representation of a point [x, y, z, r]
+    - coors_out: (N x 3) Tensor
+        - N is the number of voxels
+        - 3 is the voxel 3D indices [x, y, z], where z = 0 since pillar voxel
+    - num_points_per_voxel: Actual number of points per voxel without padding but no greater than the limit
+    """
 
     def __init__(self,
                  voxel_size,
@@ -70,6 +81,13 @@ class Voxelization(nn.Module):
                  max_num_points,
                  max_voxels,
                  deterministic=True):
+        """
+        :param voxel_size: 3D voxel size
+        :param point_cloud_range: [x_min, y_min, z_min, x_max, y_max, z_max] used to crop the point cloud
+        :param max_num_points: maximum number of points in a voxel
+        :param max_voxels: maximum number of voxels to process
+        :param deterministic: if True, sampling will be the same in every run
+        """
         super(Voxelization, self).__init__()
         """
         Args:
@@ -96,23 +114,21 @@ class Voxelization(nn.Module):
         self.max_voxels = max_voxels
         self.deterministic = deterministic
 
-        point_cloud_range = torch.tensor(
-            point_cloud_range, dtype=torch.float32)
-    
-        voxel_size = torch.tensor(voxel_size, dtype=torch.float32)
-        grid_size = (point_cloud_range[3:] -
-                     point_cloud_range[:3]) / voxel_size
-        grid_size = torch.round(grid_size).long()
-        input_feat_shape = grid_size[:2]
-        self.grid_size = grid_size
-        # the origin shape is as [x-len, y-len, z-len]
-        # [w, h, d] -> [d, h, w]
-        self.pcd_shape = [*input_feat_shape, 1][::-1]
+        # # Unused code fragment
+        # point_cloud_range = torch.tensor(
+        #     point_cloud_range, dtype=torch.float32)
+        #
+        # voxel_size = torch.tensor(voxel_size, dtype=torch.float32)
+        # grid_size = (point_cloud_range[3:] -
+        #              point_cloud_range[:3]) / voxel_size
+        # grid_size = torch.round(grid_size).long()
+        # input_feat_shape = grid_size[:2]
+        # self.grid_size = grid_size
+        # # the origin shape is as [x-len, y-len, z-len]
+        # # [w, h, d] -> [d, h, w]
+        # self.pcd_shape = [*input_feat_shape, 1][::-1]
 
     def forward(self, input):
-        """
-        input: shape=(N, c)
-        """
         if self.training:
             max_voxels = self.max_voxels[0]
         else:

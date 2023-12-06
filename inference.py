@@ -47,7 +47,6 @@ def main(args):
     # Filter points that are out of range
     pc = point_range_filter(pc)
     pc_torch = torch.from_numpy(pc).cuda()
-    print(pc_torch.shape)
 
     model.eval()
     with torch.no_grad():
@@ -57,7 +56,7 @@ def main(args):
     lidar_bboxes = result_filter['lidar_bboxes']
     labels, scores = result_filter['labels'], result_filter['scores']
 
-    vis_pc(pc, bboxes=lidar_bboxes, labels=labels)
+    # vis_pc(pc, bboxes=lidar_bboxes, labels=labels)
 
 
 if __name__ == '__main__':
