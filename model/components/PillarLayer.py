@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ops import Voxelization
+from model.components.Voxelization import Voxelization
 
 
 class PillarLayer(nn.Module):

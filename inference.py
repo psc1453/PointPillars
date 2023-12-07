@@ -56,7 +56,7 @@ def main(args):
     lidar_bboxes = result_filter['lidar_bboxes']
     labels, scores = result_filter['labels'], result_filter['scores']
 
-    # vis_pc(pc, bboxes=lidar_bboxes, labels=labels)
+    vis_pc(pc, bboxes=lidar_bboxes, labels=labels)
 
 
 if __name__ == '__main__':

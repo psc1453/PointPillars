@@ -1,3 +1,4 @@
+from .Voxelization import Voxelization
 from .PillarLayer import PillarLayer
 from .PillarEncoder import PillarEncoder
 from .Backbone import Backbone

@@ -75,6 +75,8 @@ void hard_voxelize_kernel(const torch::TensorAccessor<T, 2> points,
     voxelidx = coor_to_voxelidx[coor[i][0]][coor[i][1]][coor[i][2]];
 
     // record voxel
+    // Check whether a point has been already assigned to a voxel
+    // PSC thinks this is not necessary sice whole process is iterated in a for loop.
     if (voxelidx == -1) {
       voxelidx = voxel_num;
       if (max_voxels != -1 && voxel_num >= max_voxels) continue;
