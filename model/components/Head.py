@@ -6,11 +6,13 @@ class Head(nn.Module):
     def __init__(self, in_channel, n_anchors, n_classes):
         super().__init__()
 
+        # 1D convolution for regress boxes
         self.conv_cls = nn.Conv2d(in_channel, n_anchors * n_classes, 1)
         self.conv_reg = nn.Conv2d(in_channel, n_anchors * 7, 1)
         self.conv_dir_cls = nn.Conv2d(in_channel, n_anchors * 2, 1)
 
-        # in consitent with mmdet3d
+        # Parameter normalization
+        # In consistent with mmdet3d
         conv_layer_id = 0
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -31,6 +33,7 @@ class Head(nn.Module):
               bbox_pred: (bs, n_anchors*7, 248, 216)
               bbox_dir_cls_pred: (bs, n_anchors*2, 248, 216)
         """
+        # Do regression
         bbox_cls_pred = self.conv_cls(x)
         bbox_pred = self.conv_reg(x)
         bbox_dir_cls_pred = self.conv_dir_cls(x)
