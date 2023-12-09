@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-class Neck(nn.Module):
+class FPNDecoder(nn.Module):
     def __init__(self, in_channels, upsample_strides, out_channels):
         super().__init__()
         assert len(in_channels) == len(upsample_strides)

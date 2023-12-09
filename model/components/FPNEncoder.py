@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 
-class Backbone(nn.Module):
+class FPNEncoder(nn.Module):
     def __init__(self, in_channel, out_channels, layer_nums, layer_strides=[2, 2, 2]):
         super().__init__()
         assert len(out_channels) == len(layer_nums)

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from model.anchors import Anchors, anchor_target, anchors2bboxes
-from model.components import PillarLayer, PillarEncoder, Backbone, Neck, Head
+from model.components import PillarLayer, PillarEncoder, FPNEncoder, FPNDecoder, Head
 from ops import nms_cuda
 from utils import limit_period
 
@@ -25,12 +25,12 @@ class PointPillars(nn.Module):
                                             point_cloud_range=point_cloud_range,
                                             in_channel=9,
                                             out_channel=64)
-        self.backbone = Backbone(in_channel=64,
-                                 out_channels=[64, 128, 256],
-                                 layer_nums=[3, 5, 5])
-        self.neck = Neck(in_channels=[64, 128, 256],
-                         upsample_strides=[1, 2, 4],
-                         out_channels=[128, 128, 128])
+        self.backbone = FPNEncoder(in_channel=64,
+                                   out_channels=[64, 128, 256],
+                                   layer_nums=[3, 5, 5])
+        self.neck = FPNDecoder(in_channels=[64, 128, 256],
+                               upsample_strides=[1, 2, 4],
+                               out_channels=[128, 128, 128])
         self.head = Head(in_channel=384, n_anchors=2 * nclasses, n_classes=nclasses)
 
         # anchors
