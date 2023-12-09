@@ -18,10 +18,10 @@ class PointPillars(nn.Module):
         super().__init__()
         self.nclasses = nclasses
         self.pillar_feature_net = PillarFeatureNet(voxel_size=voxel_size,
-                                                    point_cloud_range=point_cloud_range,
-                                                 max_num_points=max_num_points,
-                                                 max_voxels=max_voxels
-                                                 )
+                                                   point_cloud_range=point_cloud_range,
+                                                   max_num_points=max_num_points,
+                                                   max_voxels=max_voxels
+                                                   )
         self.backbone = Backbone()
         self.detection_head = DetectionHead(in_channel=384, n_anchors=2 * nclasses, n_classes=nclasses)
 
