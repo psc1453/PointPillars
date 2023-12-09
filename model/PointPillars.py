@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from model.anchors import Anchors, anchor_target, anchors2bboxes
-from model.components import PillarGenerator, PillarEncoder, FPNEncoder, FPNDecoder, DetectionHead
+from model.components import PillarFeatureNet, Backbone, DetectionHead
 from ops import nms_cuda
 from utils import limit_period
 
@@ -17,21 +17,13 @@ class PointPillars(nn.Module):
                  max_voxels=(16000, 40000)):
         super().__init__()
         self.nclasses = nclasses
-        self.pillar_layer = PillarGenerator(voxel_size=voxel_size,
-                                            point_cloud_range=point_cloud_range,
-                                            max_num_points=max_num_points,
-                                            max_voxels=max_voxels)
-        self.pillar_encoder = PillarEncoder(voxel_size=voxel_size,
-                                            point_cloud_range=point_cloud_range,
-                                            in_channel=9,
-                                            out_channel=64)
-        self.backbone = FPNEncoder(in_channel=64,
-                                   out_channels=[64, 128, 256],
-                                   layer_nums=[3, 5, 5])
-        self.neck = FPNDecoder(in_channels=[64, 128, 256],
-                               upsample_strides=[1, 2, 4],
-                               out_channels=[128, 128, 128])
-        self.head = DetectionHead(in_channel=384, n_anchors=2 * nclasses, n_classes=nclasses)
+        self.pillar_feature_net = PillarFeatureNet(voxel_size=voxel_size,
+                                                    point_cloud_range=point_cloud_range,
+                                                 max_num_points=max_num_points,
+                                                 max_voxels=max_voxels
+                                                 )
+        self.backbone = Backbone()
+        self.detection_head = DetectionHead(in_channel=384, n_anchors=2 * nclasses, n_classes=nclasses)
 
         # anchors
         ranges = [[0, -39.68, -0.6, 69.12, 39.68, -0.6],
@@ -165,27 +157,17 @@ class PointPillars(nn.Module):
 
     def forward(self, batched_pts, mode='test', batched_gt_bboxes=None, batched_gt_labels=None):
         batch_size = len(batched_pts)
-        # batched_pts: list[tensor] -> pillars: (p1 + p2 + ... + pb, num_points, c), 
-        #                              coors_batch: (p1 + p2 + ... + pb, 1 + 3), 
-        #                              num_points_per_pillar: (p1 + p2 + ... + pb, ), (b: batch size)
-        pillars, coors_batch, npoints_per_pillar = self.pillar_layer(batched_pts)
 
-        # pillars: (p1 + p2 + ... + pb, num_points, c), c = 4
-        # coors_batch: (p1 + p2 + ... + pb, 1 + 3)
-        # npoints_per_pillar: (p1 + p2 + ... + pb, )
-        #                     -> pillar_features: (bs, out_channel, y_l, x_l)
-        pillar_features = self.pillar_encoder(pillars, coors_batch, npoints_per_pillar)
-
-        # xs:  [(bs, 64, 248, 216), (bs, 128, 124, 108), (bs, 256, 62, 54)]
-        xs = self.backbone(pillar_features)
+        # batched_pts: list[tensor] -> pillar_features: (bs, out_channel, y_l, x_l)
+        pillar_features = self.pillar_feature_net(batched_pts)
 
         # x: (bs, 384, 248, 216)
-        x = self.neck(xs)
+        x = self.backbone(pillar_features)
 
         # bbox_cls_pred: (bs, n_anchors*3, 248, 216) 
         # bbox_pred: (bs, n_anchors*7, 248, 216)
         # bbox_dir_cls_pred: (bs, n_anchors*2, 248, 216)
-        bbox_cls_pred, bbox_pred, bbox_dir_cls_pred = self.head(x)
+        bbox_cls_pred, bbox_pred, bbox_dir_cls_pred = self.detection_head(x)
 
         # anchors
         device = bbox_cls_pred.device
