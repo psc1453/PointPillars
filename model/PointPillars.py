@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from model.anchors import Anchors, anchor_target, anchors2bboxes
-from model.components import PillarLayer, PillarEncoder, FPNEncoder, FPNDecoder, Head
+from model.components import PillarGeneration, PillarEncoder, FPNEncoder, FPNDecoder, DetectionHead
 from ops import nms_cuda
 from utils import limit_period
 
@@ -17,10 +17,10 @@ class PointPillars(nn.Module):
                  max_voxels=(16000, 40000)):
         super().__init__()
         self.nclasses = nclasses
-        self.pillar_layer = PillarLayer(voxel_size=voxel_size,
-                                        point_cloud_range=point_cloud_range,
-                                        max_num_points=max_num_points,
-                                        max_voxels=max_voxels)
+        self.pillar_layer = PillarGeneration(voxel_size=voxel_size,
+                                             point_cloud_range=point_cloud_range,
+                                             max_num_points=max_num_points,
+                                             max_voxels=max_voxels)
         self.pillar_encoder = PillarEncoder(voxel_size=voxel_size,
                                             point_cloud_range=point_cloud_range,
                                             in_channel=9,
@@ -31,7 +31,7 @@ class PointPillars(nn.Module):
         self.neck = FPNDecoder(in_channels=[64, 128, 256],
                                upsample_strides=[1, 2, 4],
                                out_channels=[128, 128, 128])
-        self.head = Head(in_channel=384, n_anchors=2 * nclasses, n_classes=nclasses)
+        self.head = DetectionHead(in_channel=384, n_anchors=2 * nclasses, n_classes=nclasses)
 
         # anchors
         ranges = [[0, -39.68, -0.6, 69.12, 39.68, -0.6],

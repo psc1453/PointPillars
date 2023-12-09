@@ -2,7 +2,7 @@ import numpy as np
 import torch.nn as nn
 
 
-class Head(nn.Module):
+class DetectionHead(nn.Module):
     def __init__(self, in_channel, n_anchors, n_classes):
         super().__init__()
 

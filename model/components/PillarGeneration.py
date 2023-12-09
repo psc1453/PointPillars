@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from model.components.Voxelization import Voxelization
 
 
-class PillarLayer(nn.Module):
+class PillarGeneration(nn.Module):
     def __init__(self, voxel_size, point_cloud_range, max_num_points, max_voxels):
         """
         :param voxel_size: 3D voxel size
