@@ -136,7 +136,7 @@ def box_overlap(box_a: RotatedRectangle, box_b: RotatedRectangle):
     # Sort corners for computing area
     sorted_poly_corners = sort_poly_corners(intersect_poly_corners, intersect_poly_center)
 
-    # Original CUDA code has a bug here
+    # TODO: Original CUDA code has a bug here
     sorted_poly_corners += [sorted_poly_corners[0]]
 
     # Calculate area
