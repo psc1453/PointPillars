@@ -72,6 +72,7 @@ class RotatedRectangle:
         self._rotated_corners_tensor = RotatedRectangle.box_rotator(self._box_h_w_r)
 
         self._rotated_corners = [Point(x, y) for x, y in self._rotated_corners_tensor]
+        self._area = self._width * self._height
 
     @property
     def center(self) -> Point:
@@ -96,6 +97,10 @@ class RotatedRectangle:
     @property
     def rotated_corners(self) -> List[Point]:
         return self._rotated_corners
+
+    @property
+    def area(self) -> float:
+        return self._area
 
     @classmethod
     def generate_rotation_matrix(cls, r: float) -> Tensor:
