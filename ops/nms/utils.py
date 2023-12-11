@@ -1,3 +1,4 @@
+from typing import List, Union
 import math
 
 import torch
@@ -5,9 +6,18 @@ from torch import Tensor
 
 
 class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    def __init__(self, x=None, y=None):
+        if isinstance(x, Tensor):
+            self.x = x.item()
+        else:
+            self.x = x
+        if isinstance(y, Tensor):
+            self.y = y.item()
+        else:
+            self.y = y
+
+    def __repr__(self):
+        return f'Point({self.x}, {self.y})'
 
     def __add__(self, another):
         return Point(self.x + another.x, self.y + another.y)
@@ -15,11 +25,24 @@ class Point:
     def __sub__(self, another):
         return Point(self.x - another.x, self.y - another.y)
 
+    def __mul__(self, factor: Union[int, float]):
+        return Point(self.x * factor, self.y * factor)
+
+    def __truediv__(self, divisor: Union[int, float]):
+        return Point(self.x / divisor, self.y / divisor)
+
     def is_none(self):
         if self.x is None or self.y is None:
             return True
         else:
             return False
+
+    @property
+    def angle(self):
+        if self.is_none():
+            return None
+        else:
+            return math.atan2(self.y, self.x)
 
 
 class Line:
@@ -27,6 +50,9 @@ class Line:
         assert isinstance(start, Point) and isinstance(end, Point), 'Start and end must be of type Point'
         self.start = start
         self.end = end
+
+    def __repr__(self):
+        return f'{self.start} => {self.end}'
 
 
 class RotatedRectangle:
@@ -43,7 +69,9 @@ class RotatedRectangle:
         self._height = math.fabs(end_point.y - start_point.y)
 
         self._box_h_w_r = Tensor([center_x, center_y, self._width, self._height, self.rotate_angle])
-        self._rotated_corners = RotatedRectangle.box_rotator(self._box_h_w_r)
+        self._rotated_corners_tensor = RotatedRectangle.box_rotator(self._box_h_w_r)
+
+        self._rotated_corners = [Point(x, y) for x, y in self._rotated_corners_tensor]
 
     @property
     def center(self) -> Point:
@@ -62,7 +90,11 @@ class RotatedRectangle:
         return self._box_h_w_r
 
     @property
-    def rotated_corners(self) -> Tensor:
+    def rotated_corners_tensor(self) -> Tensor:
+        return self._rotated_corners_tensor
+
+    @property
+    def rotated_corners(self) -> List[Point]:
         return self._rotated_corners
 
     @classmethod
@@ -121,7 +153,7 @@ def rect_has_intersection(line_a: Line, line_b: Line) -> bool:
 def line_intersection(line_a: Line, line_b: Line) -> Point:
     _EPS = 1e-8
 
-    intersection = Point(None, None)
+    intersection = Point()
 
     # Fast exclusion
     if not rect_has_intersection(line_a, line_b):
@@ -173,11 +205,84 @@ def point_is_in_box(point: Point, box: RotatedRectangle) -> bool:
     return is_in_box
 
 
+def sort_poly_corners(poly_corners: List[Point], poly_center: Point) -> List[Point]:
+    num_corners = len(poly_corners)
+    assert num_corners > 0, 'No corners found'
+
+    temp_point = Point()
+
+    for i in range(num_corners):
+        for j in range(num_corners - 1):
+            vector_a = poly_corners[j] - poly_center
+            vector_b = poly_corners[j + 1] - poly_center
+            if vector_a.angle > vector_b.angle:
+                poly_corners[j], poly_corners[j + 1] = poly_corners[j + 1], poly_corners[j]
+
+
 def box_overlap(box_a: RotatedRectangle, box_b: RotatedRectangle):
-    pass
+    intersect_poly_center_accumulator = Point(0, 0)
+
+    # Get intersection of sides
+    cross_points = []
+
+    box_a_corners_iter = box_a.rotated_corners + [box_a.rotated_corners[0]]
+    box_b_corners_iter = box_b.rotated_corners + [box_b.rotated_corners[0]]
+
+    intersection_poly_corner_cnt = 0
+    for corner_index_a in range(4):
+        side_a = Line(box_a_corners_iter[corner_index_a], box_a_corners_iter[corner_index_a + 1])
+        for corner_index_b in range(4):
+            side_b = Line(box_b_corners_iter[corner_index_b], box_b_corners_iter[corner_index_b + 1])
+
+            sides_intersection_point = line_intersection(side_a, side_b)
+            if not sides_intersection_point.is_none():
+                cross_points.append(sides_intersection_point)
+                intersect_poly_center_accumulator += sides_intersection_point
+                intersection_poly_corner_cnt += 1
+
+    # Check corners inside the other box
+    inside_points = []
+
+    for corner_index in range(4):
+        box_a_corner = box_a.rotated_corners[corner_index]
+        box_b_corner = box_b.rotated_corners[corner_index]
+
+        if point_is_in_box(box_a_corner, box_b):
+            inside_points.append(box_a_corner)
+            intersect_poly_center_accumulator += box_a_corner
+            intersection_poly_corner_cnt += 1
+
+        if point_is_in_box(box_b_corner, box_a):
+            inside_points.append(box_b_corner)
+            intersect_poly_center_accumulator += box_b_corner
+            intersection_poly_corner_cnt += 1
+
+    # Combine all corners of intersection polynomial
+    intersect_poly_center = intersect_poly_center_accumulator / intersection_poly_corner_cnt
+    intersect_poly_corners = cross_points + inside_points
+
+    # Sort corners for computing area
+    sort_poly_corners(intersect_poly_corners, intersect_poly_center)
+
+    # Original CUDA code has a bug here
+    intersect_poly_corners += [intersect_poly_corners[0]]
+
+    # Calculate area
+    area = 0
+    for triangle_index in range(intersection_poly_corner_cnt):
+        area += vector_cross_magnitude_with_origin(intersect_poly_corners[triangle_index],
+                                                   intersect_poly_corners[triangle_index + 1],
+                                                   intersect_poly_center)
+
+    return math.fabs(area) / 2
+
+
+def test():
+    box_1 = RotatedRectangle(Point(-1, -1), Point(1, 1))
+    box_2 = RotatedRectangle(Point(-1, -1), Point(1, 1), math.pi / 4)
+    overlap = box_overlap(box_1, box_2)
+    print(overlap)
 
 
 if __name__ == '__main__':
-    box = RotatedRectangle(Point(-1, -1), Point(1, 1))
-    rotated = box.rotated_corners
-    print(rotated)
+    test()
