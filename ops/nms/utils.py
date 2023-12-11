@@ -1,7 +1,7 @@
 from typing import List
 import math
 
-from .classes import Point, Line, RotatedRectangle
+from ops.nms.classes import Point, Line, RotatedRectangle
 
 
 def vector_cross_magnitude(vector_a: Point, vector_b: Point) -> float:
@@ -76,17 +76,19 @@ def point_is_in_box(point: Point, box: RotatedRectangle) -> bool:
 
 
 def sort_poly_corners(poly_corners: List[Point], poly_center: Point) -> List[Point]:
-    num_corners = len(poly_corners)
-    assert num_corners > 0, 'No corners found'
+    corners = poly_corners.copy()
 
-    temp_point = Point()
+    num_corners = len(corners)
+    assert num_corners > 0, 'No corners found'
 
     for i in range(num_corners):
         for j in range(num_corners - 1):
-            vector_a = poly_corners[j] - poly_center
-            vector_b = poly_corners[j + 1] - poly_center
+            vector_a = corners[j] - poly_center
+            vector_b = corners[j + 1] - poly_center
             if vector_a.angle > vector_b.angle:
-                poly_corners[j], poly_corners[j + 1] = poly_corners[j + 1], poly_corners[j]
+                corners[j], corners[j + 1] = corners[j + 1], corners[j]
+
+    return corners
 
 
 def box_overlap(box_a: RotatedRectangle, box_b: RotatedRectangle):
@@ -132,17 +134,17 @@ def box_overlap(box_a: RotatedRectangle, box_b: RotatedRectangle):
     intersect_poly_corners = cross_points + inside_points
 
     # Sort corners for computing area
-    sort_poly_corners(intersect_poly_corners, intersect_poly_center)
+    sorted_poly_corners = sort_poly_corners(intersect_poly_corners, intersect_poly_center)
 
     # Original CUDA code has a bug here
-    intersect_poly_corners += [intersect_poly_corners[0]]
+    sorted_poly_corners += [sorted_poly_corners[0]]
 
     # Calculate area
     area = 0
     for triangle_index in range(intersection_poly_corner_cnt):
-        area += vector_cross_magnitude_with_origin(intersect_poly_corners[triangle_index],
-                                                   intersect_poly_corners[triangle_index + 1],
-                                                   intersect_poly_center)
+        area += vector_cross_magnitude_with_origin(intersect_poly_center,
+                                                   sorted_poly_corners[triangle_index],
+                                                   sorted_poly_corners[triangle_index + 1])
 
     return math.fabs(area) / 2
 
