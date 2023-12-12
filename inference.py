@@ -62,7 +62,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configuration Parameters')
     parser.add_argument('--ckpt', default='development/reformat_state_dict.pth', help='your checkpoint for kitti')
-    parser.add_argument('--pc_path', default='kitti/training/velodyne/000772.bin', help='your point cloud path')
+    parser.add_argument('--pc_path', default='kitti/training/velodyne/000915.bin', help='your point cloud path')
     args = parser.parse_args()
 
     main(args)
