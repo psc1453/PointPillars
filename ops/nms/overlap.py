@@ -66,8 +66,9 @@ def point_is_in_box(point: Point, box: RotatedRectangle) -> bool:
     angle_cos = math.cos(-box.rotate_angle)
     angle_sin = math.sin(-box.rotate_angle)
 
-    rotated_point_x = (point.x - box.center.x) * angle_cos + (point.y - box.center.y) * angle_sin + box.center.x
-    rotated_point_y = -(point.x - box.center.x) * angle_sin + (point.y - box.center.y) * angle_cos + box.center.y
+    # TODO: Original CUDA code has bug here
+    rotated_point_x = (point.x - box.center.x) * angle_cos - (point.y - box.center.y) * angle_sin + box.center.x
+    rotated_point_y = (point.x - box.center.x) * angle_sin + (point.y - box.center.y) * angle_cos + box.center.y
 
     is_in_box = (box.start_point.x - _MARGIN < rotated_point_x < box.end_point.x + _MARGIN and
                  box.start_point.y - _MARGIN < rotated_point_y < box.end_point.y + _MARGIN)
@@ -112,6 +113,10 @@ def box_overlap(box_a: RotatedRectangle, box_b: RotatedRectangle):
                 intersect_poly_center_accumulator += sides_intersection_point
                 intersection_poly_corner_cnt += 1
 
+    # If no intersection, IoU = 0
+    if intersection_poly_corner_cnt == 0:
+        return 0
+
     # Check corners inside the other box
     inside_points = []
 
@@ -150,8 +155,10 @@ def box_overlap(box_a: RotatedRectangle, box_b: RotatedRectangle):
 
 
 def test():
-    box_1 = RotatedRectangle(Point(-1, -1), Point(1, 1))
-    box_2 = RotatedRectangle(Point(-1, -1), Point(1, 1), math.pi / 4)
+    box_1 = RotatedRectangle(Point(12.8248, -13.4288), Point(14.4717, -9.6939), -0.5242)
+    box_2 = RotatedRectangle(Point(12.8257, -13.4140), Point(14.4805, -9.6871), -0.5248)
+    # print(box_1.rotated_corners)
+    # print(box_2.rotated_corners)
     overlap = box_overlap(box_1, box_2)
     print(overlap)
 
