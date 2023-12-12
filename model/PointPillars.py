@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from model.anchors import Anchors, anchor_target, anchors2bboxes
 from model.components import PillarFeatureNet, Backbone, DetectionHead
-from ops import nms_cuda
+from ops.nms.nms import nms
 from utils import limit_period
 
 
@@ -99,11 +99,11 @@ class PointPillars(nn.Module):
             cur_bbox_dir_cls_pred = bbox_dir_cls_pred[score_inds]
 
             # 3.2 nms core
-            keep_inds = nms_cuda(boxes=cur_bbox_pred2d,
-                                 scores=cur_bbox_cls_pred,
-                                 thresh=self.nms_thr,
-                                 pre_maxsize=None,
-                                 post_max_size=None)
+            keep_inds = nms(boxes=cur_bbox_pred2d.clone(),
+                            scores=cur_bbox_cls_pred.clone(),
+                            thresh=self.nms_thr,
+                            pre_maxsize=None,
+                            post_max_size=None)
 
             cur_bbox_cls_pred = cur_bbox_cls_pred[keep_inds]
             cur_bbox_pred = cur_bbox_pred[keep_inds]
