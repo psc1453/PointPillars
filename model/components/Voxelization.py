@@ -77,7 +77,7 @@ class Voxelization(nn.Module):
         points_voxel_coords = torch.floor((input[:, :3] - point_cloud_range[:3]) / voxel_size).to(torch.int32)
 
         # Generate mask for filter points
-        points_inside_lower_bound_mask = torch.all(points_voxel_coords >= Tensor([0, 0, 0]).cuda(), dim=1)
+        points_inside_lower_bound_mask = torch.all(points_voxel_coords >= Tensor([0, 0, 0]).to(input.device), dim=1)
         points_inside_upper_bound_mask = torch.all(points_voxel_coords < grid_size, dim=1)
         points_inside_grid_bound_mask = torch.logical_and(points_inside_lower_bound_mask, points_inside_upper_bound_mask)
 

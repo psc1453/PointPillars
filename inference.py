@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 from model import PointPillars
-from utils import read_points, keep_bbox_from_lidar_range, vis_pc
+from utils import read_points, keep_bbox_from_lidar_range
 
 
 def point_range_filter(pts, point_range=[0, -39.68, -3, 69.12, 39.68, 1]):
@@ -37,16 +37,17 @@ def main(args):
     }
     pcd_limit_range = np.array([0, -40, -3, 70.4, 40, 0.0], dtype=np.float32)
 
-    model = PointPillars(nclasses=len(CLASSES)).cuda()
-    model.load_state_dict(torch.load(args.ckpt))
+    model = PointPillars(nclasses=len(CLASSES))
+    model.load_state_dict(torch.load(args.ckpt, map_location='cpu'))
 
-    if not os.path.exists(args.pc_path):
-        raise FileNotFoundError
-    # Binary point cloud file to 2D Numpy Array (N_points x 4) where 4 is (x, y, z, r) where r is reflection rate
-    pc = read_points(args.pc_path)
+    # if not os.path.exists(args.pc_path):
+    #     raise FileNotFoundError
+    # # Binary point cloud file to 2D Numpy Array (N_points x 4) where 4 is (x, y, z, r) where r is reflection rate
+    # pc = read_points(args.pc_path)
+    pc_torch = torch.load('development/pc_for_inference.pt', map_location='cpu')
     # Filter points that are out of range
-    pc = point_range_filter(pc)
-    pc_torch = torch.from_numpy(pc).cuda()
+    # pc = point_range_filter(pc)
+    # pc_torch = torch.from_numpy(pc)
 
     model.eval()
     with torch.no_grad():
@@ -56,7 +57,8 @@ def main(args):
     lidar_bboxes = result_filter['lidar_bboxes']
     labels, scores = result_filter['labels'], result_filter['scores']
 
-    vis_pc(pc, bboxes=lidar_bboxes, labels=labels)
+    print(lidar_bboxes, labels)
+    # vis_pc(pc, bboxes=lidar_bboxes, labels=labels)
 
 
 if __name__ == '__main__':

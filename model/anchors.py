@@ -4,7 +4,7 @@ import torch
 from utils import limit_period, iou2d_nearest
 
 
-class Anchors():
+class Anchors:
     def __init__(self, ranges, sizes, rotations):
         assert len(ranges) == len(sizes)
         self.ranges = ranges
