@@ -107,5 +107,5 @@ class PillarEncoder(nn.Module):
             # Append to canvas list
             batched_canvas.append(canvas)
         # Stack the canvas list along fist dimension [[out_channel x y_l x x_l]] => [bs x out_channel x y_l x x_l]
-        batched_canvas = torch.stack(batched_canvas, dim=0)  # (bs, in_channel, self.y_l, self.x_l)
+        batched_canvas = torch.stack(batched_canvas, dim=0)  # (bs, out_channel, self.y_l, self.x_l)
         return batched_canvas

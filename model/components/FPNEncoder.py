@@ -20,7 +20,7 @@ class FPNEncoder(nn.Module):
             blocks.append(nn.BatchNorm2d(out_channels[i], eps=1e-3, momentum=0.01))
             blocks.append(nn.ReLU(inplace=True))
 
-            # Do layer_nums[i] more times of Stride=2, keep channel convolution, normalization and ReLU
+            # Do layer_nums[i] more times of kernel=3, padding=1, keep size-channel convolution, normalization and ReLU
             for _ in range(layer_nums[i]):
                 blocks.append(nn.Conv2d(out_channels[i], out_channels[i], 3, bias=False, padding=1))
                 blocks.append(nn.BatchNorm2d(out_channels[i], eps=1e-3, momentum=0.01))
