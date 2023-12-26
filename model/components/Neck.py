@@ -11,11 +11,12 @@ class Neck(nn.Module):
         self.decoder_blocks = nn.ModuleList()
         for i in range(len(in_channels)):
             decoder_block = []
-            decoder_block.append(nn.ConvTranspose2d(in_channels[i],
-                                                    out_channels[i],
-                                                    upsample_strides[i],
-                                                    stride=upsample_strides[i],
-                                                    bias=False))
+            decoder_block.append(nn.Conv2d(in_channels=in_channels[i],
+                                           out_channels=out_channels[i] * upsample_strides[i] * upsample_strides[i],
+                                           kernel_size=3,
+                                           padding=1,
+                                           bias=False))
+            decoder_block.append(nn.PixelShuffle(upsample_strides[i]))
             decoder_block.append(nn.BatchNorm2d(out_channels[i], eps=1e-3, momentum=0.01))
             decoder_block.append(nn.ReLU(inplace=True))
 
